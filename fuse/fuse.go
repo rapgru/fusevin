@@ -2,10 +2,8 @@ package fuse
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"syscall"
-	"bufio"
 	"log"
 	"sync"
 
@@ -19,6 +17,7 @@ type FuseServer struct {
 	Filesystem FS
 	WaitGroup *sync.WaitGroup
 	NotifyCallback func(string) error
+	receiveInputChans map[string]chan string
 }
 
 func (server *FuseServer) Start() {
@@ -52,6 +51,21 @@ func (server *FuseServer) Start() {
 
 func (server *FuseServer) CreateFile(name string) {
 	server.Filesystem.addFile(name)
+
+	if server.receiveInputChans == nil {
+		server.receiveInputChans = make(map[string]chan string)
+	}
+	server.receiveInputChans[name] = make(chan string)
+}
+
+func (server *FuseServer) SupplyStdin(name string, text string) {
+	server.receiveInputChans[name] <- text
+}
+
+func (server *FuseServer) DestroyFile(name string) {
+	server.Filesystem.removeFile(name)
+
+	delete(server.receiveInputChans, name)
 }
 
 type FS struct {
@@ -72,6 +86,17 @@ func (f *FS) addFile(name string) error {
 	 	Name:  name,
 	 	server: f.server,
 	})
+	return nil
+}
+
+func (f *FS) removeFile(name string) error {
+	f.maxInode -= 1
+	for i, file := range f.rootDir.fileList.files {
+		if file.Name == name {
+			f.rootDir.fileList.files = append(f.rootDir.fileList.files[:i], f.rootDir.fileList.files[i+1:]...)
+			return nil
+		}
+ }
 	return nil
 }
 
@@ -125,10 +150,6 @@ func (pf PuppetFile) Attr(ctx context.Context, a *fuse.Attr) error {
 func (pf PuppetFile) ReadAll(ctx context.Context) ([]byte, error) {
 	pf.server.NotifyCallback(pf.Name)
 
-	// TODO
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Read occured, enter number: ")
-	// text <- channel
-	text, err := reader.ReadString('\n')
-	return []byte(text), err
+	text := <- pf.server.receiveInputChans[pf.Name]
+	return []byte(text), nil
 }

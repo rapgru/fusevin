@@ -22,8 +22,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"sync"
 	"os"
+	"sync"
 
 	f "tuwien.ac.at/fusevin/fuse"
 	rpc "tuwien.ac.at/fusevin/grpc"
@@ -57,6 +57,13 @@ func main() {
 	go fuseserver.Start()
 	go grpcserver.Start()
 
+/*	c := make(chan os.Signal, 1)
+ 	signal.Notify(c, os.Interrupt)
+	go func(){
+	    for sig := range c {
+	        // sig is a ^C, handle it
+	    }
+	}() */
 
 	wg.Wait()
 }

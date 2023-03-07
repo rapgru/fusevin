@@ -22,10 +22,10 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FuseVinClient interface {
-	// Sends a greeting
 	CreatePuppet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CreatePuppetReply, error)
 	StartStdinNotify(ctx context.Context, in *StartStdinNotifyRequest, opts ...grpc.CallOption) (FuseVin_StartStdinNotifyClient, error)
 	SupplyStdinContent(ctx context.Context, in *StdinContent, opts ...grpc.CallOption) (*Empty, error)
+	DestroyPuppet(ctx context.Context, in *DestroyPuppetRequest, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type fuseVinClient struct {
@@ -86,14 +86,23 @@ func (c *fuseVinClient) SupplyStdinContent(ctx context.Context, in *StdinContent
 	return out, nil
 }
 
+func (c *fuseVinClient) DestroyPuppet(ctx context.Context, in *DestroyPuppetRequest, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/vin.FuseVin/DestroyPuppet", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FuseVinServer is the server API for FuseVin service.
 // All implementations must embed UnimplementedFuseVinServer
 // for forward compatibility
 type FuseVinServer interface {
-	// Sends a greeting
 	CreatePuppet(context.Context, *Empty) (*CreatePuppetReply, error)
 	StartStdinNotify(*StartStdinNotifyRequest, FuseVin_StartStdinNotifyServer) error
 	SupplyStdinContent(context.Context, *StdinContent) (*Empty, error)
+	DestroyPuppet(context.Context, *DestroyPuppetRequest) (*Empty, error)
 	mustEmbedUnimplementedFuseVinServer()
 }
 
@@ -109,6 +118,9 @@ func (UnimplementedFuseVinServer) StartStdinNotify(*StartStdinNotifyRequest, Fus
 }
 func (UnimplementedFuseVinServer) SupplyStdinContent(context.Context, *StdinContent) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SupplyStdinContent not implemented")
+}
+func (UnimplementedFuseVinServer) DestroyPuppet(context.Context, *DestroyPuppetRequest) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DestroyPuppet not implemented")
 }
 func (UnimplementedFuseVinServer) mustEmbedUnimplementedFuseVinServer() {}
 
@@ -180,6 +192,24 @@ func _FuseVin_SupplyStdinContent_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FuseVin_DestroyPuppet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DestroyPuppetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FuseVinServer).DestroyPuppet(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/vin.FuseVin/DestroyPuppet",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FuseVinServer).DestroyPuppet(ctx, req.(*DestroyPuppetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FuseVin_ServiceDesc is the grpc.ServiceDesc for FuseVin service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -194,6 +224,10 @@ var FuseVin_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SupplyStdinContent",
 			Handler:    _FuseVin_SupplyStdinContent_Handler,
+		},
+		{
+			MethodName: "DestroyPuppet",
+			Handler:    _FuseVin_DestroyPuppet_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -7,6 +7,9 @@ import (
 	"log"
 	"time"
 	"io"
+	"bufio"
+	"fmt"
+	"os"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -36,17 +39,18 @@ func main() {
 	defer cancel()
 	r, err := c.CreatePuppet(ctx, &pb.Empty{})
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		log.Fatalf("could create puppet: %v", err)
 	}
-	log.Printf("Redirecting filename: %s", r.GetVinFilename())
 
-	ctx = context.Background()
-	stream, err := c.StartStdinNotify(ctx, &pb.StartStdinNotifyRequest{Id: r.GetId()})
+	log.Printf("Redirecting filename: %s", r.GetVinFilename())
+	defer c.DestroyPuppet(context.Background(), &pb.DestroyPuppetRequest{Id: r.GetId()})
+
+	stream, err := c.StartStdinNotify(context.Background(), &pb.StartStdinNotifyRequest{Id: r.GetId()})
 	if err != nil {
 		log.Fatalf("could not start stream: %v", err)
 	}
 
-	for {
+	for i:=1; i<=2; i++ {
 		_, err := stream.Recv()
 		if err == io.EOF {
 			break
@@ -56,5 +60,14 @@ func main() {
 		}
 
 		log.Printf("Received StdinNotify")
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Println("Read occured, enter string: ")
+		// text <- channel
+		text, err := reader.ReadString('\n')
+		if err != nil {
+			log.Fatalf("unable to read from terminal")
+		}
+
+		c.SupplyStdinContent(context.Background(), &pb.StdinContent{Id: r.GetId(), Payload: text})
 	}
 }

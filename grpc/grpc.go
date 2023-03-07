@@ -1,17 +1,17 @@
 package grpc
 
-
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
-	"fmt"
 	"sync"
 
-	"google.golang.org/grpc"
-	pb "tuwien.ac.at/fusevin/vin"
-	f "tuwien.ac.at/fusevin/fuse"
 	nanoid "github.com/matoous/go-nanoid/v2"
+	"google.golang.org/grpc"
+	f "tuwien.ac.at/fusevin/fuse"
+	"tuwien.ac.at/fusevin/vin"
+	pb "tuwien.ac.at/fusevin/vin"
 )
 
 type GRPCServer struct {
@@ -77,6 +77,12 @@ func (s *server) StartStdinNotify(request *pb.StartStdinNotifyRequest, stream pb
 	return nil
 }
 
-func (s *server) SupplyStdinContent(ctx context.Context, in *pb.StdinContent) {
-	// -> fuseserver.channel
+func (s *server) SupplyStdinContent(ctx context.Context, in *pb.StdinContent) (*vin.Empty, error) {
+	s.fuseServer.SupplyStdin(in.Id, in.Payload)
+	return &pb.Empty{}, nil
+}
+
+func (s *server) DestroyPuppet(ctx context.Context, in *pb.DestroyPuppetRequest) (*vin.Empty, error) {
+	s.fuseServer.DestroyFile(in.Id)
+	return &pb.Empty{}, nil
 }
