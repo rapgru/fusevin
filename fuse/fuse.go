@@ -27,6 +27,7 @@ func (server *FuseServer) Start() {
 		server.Mountpoint,
 		fuse.FSName("vinfuse"),
 		fuse.Subtype("vinfusefs"),
+		fuse.AllowOther(),
 	)
 	if err != nil {
 		log.Fatal(err)
